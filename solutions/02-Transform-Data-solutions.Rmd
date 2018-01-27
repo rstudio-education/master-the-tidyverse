@@ -1,0 +1,262 @@
+---
+title: "Transform Data (solutions)"
+output: html_document
+---
+
+```{r setup}
+library(tidyverse)
+library(babynames)
+library(nycflights13)
+
+# Toy datasets to use
+
+pollution <- tribble(
+       ~city,   ~size, ~amount, 
+  "New York", "large",      23,
+  "New York", "small",      14,
+    "London", "large",      22,
+    "London", "small",      16,
+   "Beijing", "large",      121,
+   "Beijing", "small",      56
+)
+
+band <- tribble(
+   ~name,     ~band,
+  "Mick",  "Stones",
+  "John", "Beatles",
+  "Paul", "Beatles"
+)
+
+instrument <- tribble(
+    ~name,   ~plays,
+   "John", "guitar",
+   "Paul",   "bass",
+  "Keith", "guitar"
+)
+
+instrument2 <- tribble(
+    ~artist,   ~plays,
+   "John", "guitar",
+   "Paul",   "bass",
+  "Keith", "guitar"
+)
+```
+
+## babynames
+
+```{r}
+babynames
+```
+
+
+## Your Turn 1
+
+Alter the code to select just the `n` column:
+
+```{r}
+select(babynames, n)
+```
+
+## Quiz
+
+Which of these is NOT a way to select the `name` and `n` columns together?
+
+```{r}
+select(babynames, -c(year, sex, prop))
+select(babynames, name:n)
+select(babynames, starts_with("n"))
+select(babynames, ends_with("n"))
+```
+
+## Your Turn 2
+
+Show:
+
+* All of the names where prop is greater than or equal to 0.08  
+* All of the children named "Sea"  
+* All of the names that have a missing value for `n`  
+
+```{r}
+filter(babynames, prop >= 0.08)
+filter(babynames, name == "Sea")
+filter(babynames, is.na(n))
+```
+
+## Your Turn 3
+
+Use Boolean operators to alter the code below to return only the rows that contain:
+
+* Girls named Sea  
+* Names that were used by exactly 5 or 6 children in 1880  
+* Names that are one of Acura, Lexus, or Yugo
+
+```{r}
+filter(babynames, name == "Sea", sex == "F")
+filter(babynames, n == 5 | n == 6, year == 1880)
+filter(babynames, name %in% c("Acura", "Lexus", "Yugo"))
+```
+
+## Your Turn 4
+
+Arrange babynames by `n`. Add `prop` as a second (tie breaking) variable to arrange on. Can you tell what the smallest value of `n` is?
+
+```{r}
+arrange(babynames, n, prop)
+```
+
+## Your Turn 5
+
+Use `desc()` to find the names with the highest prop.
+Then, use `desc()` to find the names with the highest n.
+
+```{r}
+arrange(babynames, desc(prop))
+arrange(babynames, desc(n))
+```
+
+## Your Turn 6
+
+Use `%>%` to write a sequence of functions that: 
+
+1. Filter babynames to just the girls that were born in 2015  
+2. Select the `name` and `n` columns  
+3. Arrange the results so that the most popular names are near the top.
+
+```{r}
+babynames %>% 
+  filter(year == 2015, sex == "F") %>% 
+  select(name, n) %>% 
+  arrange(desc(n))
+```
+
+## Exam
+
+1. Trim `babynames` to just the rows that contain your `name` and your `sex`  
+2. Trim the result to just the columns that will appear in your graph (not strictly necessary, but useful practice)  
+3. Plot the results as a line graph with `year` on the x axis and `prop` on the y axis
+
+```{r}
+babynames %>% 
+  filter(name == "Garrett", sex == "M") %>%
+  select(year, prop) %>%
+  ggplot() +
+    geom_line(mapping = aes(year, prop))
+```
+
+## Your Turn 7
+
+Use summarise() to compute three statistics about the data:
+
+1. The first (minimum) year in the dataset  
+2. The last (maximum) year in the dataset  
+3. The total number of children represented in the data
+
+```{r}
+babynames %>% 
+  summarise(first = min(year), 
+            last = max(year), 
+            total = sum(n))
+```
+
+## Your Turn 8
+
+Extract the rows where `name == "Khaleesi"`. Then use `summarise()` and a summary functions to find:
+
+1. The total number of children named Khaleesi
+2. The first year Khaleesi appeared in the data
+
+```{r}
+babynames %>% 
+  filter(name == "Khaleesi") %>% 
+  summarise(total = sum(n), first = min(year))
+```
+
+## Your Turn 9
+
+Use `group_by()`, `summarise()`, and `arrange()` to display the ten most popular names. Compute popularity as the total number of children of a single gender given a name.
+
+```{r}
+babynames %>%
+  group_by(name, sex) %>% 
+  summarise(total = sum(n)) %>% 
+  arrange(desc(total))
+```
+
+## Your Turn 10
+
+Use grouping to calculate and then plot the number of children born each year over time.
+
+```{r}
+babynames %>%
+  group_by(year) %>% 
+  summarise(n_children = sum(n)) %>% 
+  ggplot() +
+    geom_line(mapping = aes(x = year, y = n_children))
+```
+
+## Your Turn 11
+
+Use `min_rank()` and `mutate()` to rank each row in `babynames` from largest `n` to lowest `n`.
+
+```{r}
+babynames %>% 
+  mutate(rank = min_rank(desc(prop)))
+```
+
+## Your Turn 12
+
+Compute each name's rank _within its year and sex_. 
+Then compute the median rank _for each combination of name and sex_, and arrange the results from highest median rank to lowest.
+
+```{r}
+babynames %>% 
+  group_by(year, sex) %>% 
+  mutate(rank = min_rank(desc(prop))) %>% 
+  group_by(name, sex) %>% 
+  summarise(score = median(rank)) %>% 
+  arrange(score)
+```
+
+## Your Turn 13
+
+Which airlines had the largest arrival delays? Complete the code below.
+
+1. Join `airlines` to `flights`
+2. Compute and order the average arrival delays by airline. Display full names, no codes.
+
+```{r}
+flights %>% 
+  drop_na(arr_delay) %>%
+  left_join(airlines, by = "carrier") %>%
+  group_by(name) %>%
+  summarise(delay = mean(arr_delay)) %>%
+  arrange(delay)
+```
+
+## Your Turn 14
+
+How many airports in `airports` are serviced by flights originating in New York (i.e. flights in our dataset?) Notice that the column to join on is named `faa` in the **airports** data set and `dest` in the **flights** data set.
+
+
+```{r}
+airports %>%
+  semi_join(flights, by = c("faa" = "dest")) %>%
+  distinct(faa)
+```
+
+***
+
+# Take aways
+
+* Extract variables with `select()`  
+* Extract cases with `filter()`  
+* Arrange cases, with `arrange()`  
+
+* Make tables of summaries with `summarise()`  
+* Make new variables, with `mutate()`  
+* Do groupwise operations with `group_by()`
+
+* Connect operations with `%>%`  
+
+* Use `left_join()`, `right_join()`, `full_join()`, or `inner_join()` to join datasets
+* Use `semi_join()` or `anti_join()` to filter datasets against each other

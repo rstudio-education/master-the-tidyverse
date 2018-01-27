@@ -1,0 +1,121 @@
+---
+title: "Models (solutions)"
+output: html_document
+---
+
+```{r setup, message=FALSE}
+library(tidyverse)
+library(modelr)
+library(broom)
+
+wages <- heights %>% filter(income > 0)
+```
+
+## Your Turn 1
+
+Fit the model on the slide and then examine the output. What does it look like?
+
+```{r}
+mod_e <- lm(log(income) ~ education, data = wages)
+mod_e
+```
+
+## Your Turn 2
+
+Use a pipe to model `log(income)` against `height`. Then use broom and dplyr functions to extract:
+
+1. The **coefficient estimates** and their related statistics 
+2. The **adj.r.squared** and **p.value** for the overall model
+
+```{r}
+mod_h <- wages %>% lm(log(income) ~ height, data = .)
+mod_h %>%
+  tidy()
+
+mod_h %>% 
+  glance() %>% 
+  select(adj.r.squared, p.value)
+```
+
+## Your Turn 3
+
+Model `log(income)` against `education` _and_ `height`. Do the coefficients change?
+
+```{r}
+mod_eh <- wages %>% 
+  lm(log(income) ~ education + height, data = .)
+
+mod_eh %>% 
+  tidy()
+```
+
+## Your Turn 4
+
+Model `log(income)` against `education` and `height` and `sex`. Can you interpret the coefficients?
+
+```{r}
+mod_ehs <- wages %>% 
+  lm(log(income) ~ education + height + sex, data = .)
+
+mod_ehs %>% 
+  tidy()
+```
+
+## Your Turn 5
+
+Use a broom function and ggplot2 to make a line graph of `height` vs `.fitted` for our heights model, `mod_h`.
+
+_Bonus: Overlay the plot on the original data points._
+
+```{r}
+mod_h <- wages %>% lm(log(income) ~ height, data = .)
+
+mod_h %>% 
+  augment(data = wages) %>% 
+  ggplot(mapping = aes(x = height, y = .fitted)) +
+    geom_point(mapping = aes(y = log(income)), alpha = 0.1) +
+    geom_line(color = "blue")
+```
+
+## Your Turn 6
+
+Repeat the process to make a line graph of `height` vs `.fitted` colored by `sex` for model mod_ehs. Are the results interpretable? Add `+ facet_wrap(~education)` to the end of your code. What happens?
+
+```{r}
+mod_ehs <- wages %>% lm(log(income) ~ education + height + sex, data = .)
+
+mod_ehs %>% 
+  augment(data = wages) %>% 
+  ggplot(mapping = aes(x = height, y = .fitted, color = sex)) +
+    geom_line() +
+    facet_wrap(~ education)
+```
+
+## Your Turn 7
+
+Use one of `spread_predictions()` or `gather_predictions()` to make a line graph of `height` vs `pred` colored by `model` for each of mod_h, mod_eh, and mod_ehs. Are the results interpretable? 
+
+Add `+ facet_grid(sex ~ education)` to the end of your code. What happens?
+
+```{r warning = FALSE, message = FALSE}
+mod_h <- wages %>% lm(log(income) ~ height, data = .)
+mod_eh <- wages %>% lm(log(income) ~ education + height, data = .)
+mod_ehs <- wages %>% lm(log(income) ~ education + height + sex, data = .)
+
+wages %>% 
+  gather_predictions(mod_h, mod_eh, mod_ehs) %>% 
+  ggplot(mapping = aes(x = height, y = pred, color = model)) +
+    geom_line() +
+    facet_grid(sex ~ education)
+```
+
+***
+
+# Take Aways
+
+* Use `glance()`, `tidy()`, and `augment()` from the **broom** package to return model values in a data frame.
+
+* Use `add_predictions()` or `gather_predictions()` or `spread_predictions()` from the **modelr** package to visualize predictions.
+
+* Use `add_residuals()` or `gather_residuals()` or `spread_residuals()` from the **modelr** package to visualize residuals.
+
