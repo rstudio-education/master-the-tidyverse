@@ -38,7 +38,7 @@ Using `gapminder`, make a line plot of **lifeExp** vs. **year** grouped by **cou
 
 ## Your Turn 3
 
-Complete the code to filter, `residuals`, which is the dataset that you made in Your Turn 2, against `bad_fits`, which is the data set that contains just the countries that have an r-squared < 0.25.
+Complete the code to filter `residuals`, which is the dataset that you made in Your Turn 2, against `bad_fits`, which is the data set that contains just the countries that have an r-squared < 0.25.
 
 Use the result to plot a line graph of `year` vs. `.resid` colored by `country` for each country that had an r-squared < 0.25.
 
